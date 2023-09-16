@@ -1,16 +1,17 @@
 const global = {
   currentPage: window.location.pathname,
 };
+const popularMovies = document.querySelector('#popular-movies');
+const popularShows = document.querySelector('#popular-shows');
 
 function init() {
   switch (global.currentPage) {
     case '/':
     case '/index.html':
-      console.log('Home');
       displayPopularMovies('movie/popular');
       break;
     case '/movie-details.html':
-      console.log('Movie Details');
+      displayMovieDetails();
       break;
     case '/search.html':
       console.log('Search');
@@ -45,15 +46,16 @@ async function fetchAPIData(endpoint) {
     if (!response.ok) throw new Error('Request Failed');
     const data = await response.json();
     hideSpinner();
-    return data.results;
+    return data;
   } catch (error) {
     console.log(error);
   }
 }
 
 async function displayPopularMovies() {
-  const movies = await fetchAPIData('movie/popular');
-  const popularMovies = document.querySelector('#popular-movies');
+  const response = await fetchAPIData('movie/popular');
+  const movies = response.results;
+  //const popularMovies = document.querySelector('#popular-movies');
   popularMovies.innerHTML = '';
 
   movies.forEach((movie) => {
@@ -109,8 +111,9 @@ async function displayPopularMovies() {
 }
 
 async function displayPopularTVShows() {
-  const shows = await fetchAPIData('tv/popular');
-  const popularShows = document.querySelector('#popular-shows');
+  const response = await fetchAPIData('tv/popular');
+  const shows = response.results;
+  //const popularShows = document.querySelector('#popular-shows');
   popularShows.innerHTML = '';
 
   shows.forEach((show) => {
@@ -163,6 +166,74 @@ async function displayPopularTVShows() {
 
     popularShows.appendChild(card);
   });
+}
+
+async function displayMovieDetails() {
+  const movieID = window.location.href.split('=')[1];
+  const movieDetails = await fetchAPIData('movie/' + movieID);
+
+  let movieDetailsDiv = document.querySelector('#movie-details');
+  movieDetailsDiv.innerHTML = `
+  <div id="movie-details">
+  <div class="details-top">
+    <div>
+      <img src=${
+        movieDetails.poster_path
+          ? `https://image.tmdb.org/t/p/original/${movieDetails.poster_path}`
+          : 'images/no-image.jpg'
+      } class="card-img-top" alt=${movieDetails.title} />
+    </div>
+    <div>
+      <h2>${movieDetails.title}</h2>
+      <p>
+        <i class="fas fa-star text-primary"></i>${movieDetails.vote_average.toFixed(
+          2
+        )}/10
+      </p>
+      <p class="text-muted">${
+        'Release Date: ' +
+        movieDetails.release_date.substring(8) +
+        '/' +
+        movieDetails.release_date.substring(5, 7) +
+        '/' +
+        movieDetails.release_date.substring(0, 4)
+      }</p>
+      <p>${movieDetails.overview}</p>
+      <h5>Genres</h5>
+      <ul class="list-group">
+      ${movieDetails.genres.map((genre) => `<li>${genre.name}</li>`).join('')}
+      </ul>
+      <a href="#" target="_blank" class="btn">
+        Visit Movie Homepage
+      </a>
+    </div>
+  </div>
+  <div class="details-bottom">
+    <h2>Movie Info</h2>
+    <ul>
+      <li>
+        <span class="text-secondary">Budget:</span> $${movieDetails.budget}
+      </li>
+      <li>
+        <span class="text-secondary">Revenue:</span> $${movieDetails.revenue}
+      </li>
+      <li>
+        <span class="text-secondary">Runtime:</span> ${
+          movieDetails.runtime
+        } minutes
+      </li>
+      <li>
+        <span class="text-secondary">Status:</span> ${movieDetails.status}
+      </li>
+    </ul>
+    <h4>Production Companies</h4>
+    <div class="list-group">
+    ${movieDetails.production_companies
+      .map((company) => `${company.name}`)
+      .join(', ')}
+    </div>
+  </div>
+</div>`;
 }
 
 function showSpinner() {
