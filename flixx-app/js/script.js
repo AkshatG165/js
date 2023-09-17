@@ -164,7 +164,7 @@ async function displayPopularTVShows() {
 }
 
 async function displayMovieDetails() {
-  const movieID = window.location.href.split('=')[1];
+  const movieID = window.location.search.split('=')[1];
   const movieDetails = await fetchAPIData('movie/' + movieID);
 
   let movieDetailsDiv = document.querySelector('#movie-details');
@@ -233,7 +233,7 @@ async function displayMovieDetails() {
 }
 
 async function displayShowDetails() {
-  const showID = window.location.href.split('=')[1];
+  const showID = window.location.search.split('=')[1];
   const showDetails = await fetchAPIData('tv/' + showID);
 
   let showDetailsDiv = document.querySelector('#show-details');
@@ -359,7 +359,6 @@ async function displayMoviesOrShows(e = 0) {
     return;
   }
 
-  //console.log(results);
   document.querySelector('#search-results-heading').innerHTML = `
     <h3>${
       results.length
@@ -496,16 +495,16 @@ function init() {
     case '/':
     case '/index.html':
       displaySlider();
-      displayPopularMovies('movie/popular');
+      displayPopularMovies();
       break;
     case '/movie-details.html':
       displayMovieDetails();
       break;
     case '/search.html':
       displayMoviesOrShows();
-      console.log('hi');
       break;
     case '/shows.html':
+    case '/shows':
       displayPopularTVShows();
       break;
     case '/tv-details.html':
