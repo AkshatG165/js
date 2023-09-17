@@ -4,6 +4,11 @@ const global = {
     apiKey: '4ab5862a5adc673134e05793e467432b',
     apiURL: 'https://api.themoviedb.org/3/',
   },
+  searchParams: {
+    type: '',
+    searchTerm: '',
+    pageNo: 1,
+  },
 };
 const popularMovies = document.querySelector('#popular-movies');
 const popularShows = document.querySelector('#popular-shows');
@@ -24,14 +29,14 @@ async function fetchAPIData(endpoint) {
   }
 }
 
-async function searchDataAPI(type, searchTerm) {
+async function searchDataAPI() {
   const API_KEY = global.api.apiKey;
   const API_URL = global.api.apiURL;
   showSpinner();
 
   try {
     const response = await fetch(
-      `${API_URL}search/${type}?query=${searchTerm}&api_key=${API_KEY}`
+      `${API_URL}search/${global.searchParams.type}?query=${global.searchParams.searchTerm}&page=${global.searchParams.pageNo}&api_key=${API_KEY}`
     );
     if (!response.ok) throw new Error('Request Failed');
     const data = await response.json();
@@ -325,59 +330,103 @@ async function displaySlider() {
   initSwiper();
 }
 
-async function displayMoviesOrShows() {
-  const type = window.location.search.split('&')[0].split('=')[1];
-  const searchTerm = window.location.search
+async function displayMoviesOrShows(e = 0) {
+  global.searchParams.type = window.location.search.split('&')[0].split('=')[1];
+  global.searchParams.searchTerm = window.location.search
     .split('&')[1]
     .split('=')[1]
     .split('+')
     .join(' ');
 
-  if (!searchTerm || searchTerm === '') showAlert('Search term is empty');
+  if (e) {
+    if (e.target.getAttribute('id') === 'next') {
+      global.searchParams.pageNo += 1;
+    } else if (e.target.getAttribute('id') === 'prev') {
+      global.searchParams.pageNo -= 1;
+    }
+  }
 
-  const response = await searchDataAPI(type, searchTerm);
-  const moviesOrShows = response.results;
+  const { page, results, total_pages, total_results } = await searchDataAPI();
 
   const searchReasults = document.querySelector('#search-results');
   searchReasults.innerHTML = '';
 
-  moviesOrShows.forEach((movieOrShow) => {
+  if (
+    !global.searchParams.searchTerm ||
+    global.searchParams.searchTerm === ''
+  ) {
+    showAlert('Search term is empty');
+    return;
+  }
+
+  //console.log(results);
+  document.querySelector('#search-results-heading').innerHTML = `
+    <h3>${
+      results.length
+    } OF ${total_results} RESULTS FOR "${global.searchParams.searchTerm.toUpperCase()}"</h3>`;
+
+  results.forEach((results) => {
     const div = document.createElement('div');
     div.className = 'card';
     div.innerHTML = `
-        <a href="${type}-details.html?id=${movieOrShow.id}">
+        <a href="${global.searchParams.type}-details.html?id=${results.id}">
             <img src=${
-              movieOrShow.poster_path
-                ? `https://image.tmdb.org/t/p/original/${movieOrShow.poster_path}`
+              results.poster_path
+                ? `https://image.tmdb.org/t/p/original/${results.poster_path}`
                 : 'images/no-image.jpg'
             } class="card-img-top" alt=${
-      type === 'movie' ? movieOrShow.title : movieOrShow.name
+      global.searchParams.type === 'movie' ? results.title : results.name
     } />
         </a>
         <div class="card-body">
             <h5 class="card-title">${
-              type === 'movie' ? movieOrShow.title : movieOrShow.name
+              global.searchParams.type === 'movie'
+                ? results.title
+                : results.name
             }</h5>
             <p class="card-text">
             <small class="text-muted">Release: ${
-              type === 'movie'
-                ? `${movieOrShow.release_date.substring(
+              global.searchParams.type === 'movie'
+                ? `${results.release_date.substring(
                     8
-                  )}/${movieOrShow.release_date.substring(
+                  )}/${results.release_date.substring(
                     5,
                     7
-                  )}/${movieOrShow.release_date.substring(0, 4)}`
-                : `${movieOrShow.first_air_date.substring(
+                  )}/${results.release_date.substring(0, 4)}`
+                : `${results.first_air_date.substring(
                     8
-                  )}/${movieOrShow.first_air_date.substring(
+                  )}/${results.first_air_date.substring(
                     5,
                     7
-                  )}/${movieOrShow.first_air_date.substring(0, 4)}`
+                  )}/${results.first_air_date.substring(0, 4)}`
             }</small>
             </p>
         </div>`;
     searchReasults.appendChild(div);
   });
+
+  document.querySelector('#pagination').innerHTML = `
+    <div class="pagination">
+        <button class="btn btn-primary" id="prev">Prev</button>
+        <button class="btn btn-primary" id="next">Next</button>
+    <div class="page-counter">Page ${page} of ${total_pages}</div>
+    </div>
+  `;
+
+  const prev = document.querySelector('.pagination #prev');
+  const next = document.querySelector('.pagination #next');
+
+  //disable prev button if at first page
+  if (page === 1) {
+    prev.setAttribute('disabled', true);
+  }
+  //disable next button if at last page
+  if (page === total_pages) {
+    next.setAttribute('disabled', true);
+  }
+
+  next.addEventListener('click', displayMoviesOrShows);
+  prev.addEventListener('click', displayMoviesOrShows);
 }
 
 function highlightActiveLink() {
@@ -454,6 +503,7 @@ function init() {
       break;
     case '/search.html':
       displayMoviesOrShows();
+      console.log('hi');
       break;
     case '/shows.html':
       displayPopularTVShows();

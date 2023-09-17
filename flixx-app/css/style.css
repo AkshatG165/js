@@ -327,6 +327,11 @@ section h2 {
   color: #fff;
 }
 
+#search-results-wrapper #search-results-heading {
+  text-align: center;
+  margin: 15px;
+}
+
 .pagination {
   margin-top: 20px;
 }
