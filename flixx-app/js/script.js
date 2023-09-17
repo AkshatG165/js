@@ -333,9 +333,10 @@ async function displayMoviesOrShows() {
     .split('+')
     .join(' ');
 
+  if (!searchTerm || searchTerm === '') showAlert('Search term is empty');
+
   const response = await searchDataAPI(type, searchTerm);
   const moviesOrShows = response.results;
-  console.log(moviesOrShows);
 
   const searchReasults = document.querySelector('#search-results');
   searchReasults.innerHTML = '';
@@ -430,6 +431,15 @@ function initSwiper() {
       1200: { slidesPerView: 5 },
     },
   });
+}
+
+function showAlert(text) {
+  const div = document.createElement('div');
+  div.classList.add('alert', 'alert-error');
+  div.innerText = text;
+  document.querySelector('#alert').appendChild(div);
+
+  setTimeout(() => div.remove(), 3000);
 }
 
 function init() {
