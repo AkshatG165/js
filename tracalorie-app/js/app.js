@@ -71,7 +71,7 @@ class CalorieTracker {
     const progressPercentage = (this.#totalCalories / this.#claorieLimit) * 100;
     const calorieProgress = document.querySelector('#calorie-progress');
 
-    if (progressPercentage < 100) {
+    if (progressPercentage <= 100) {
       calorieProgress.setAttribute('style', `width: ${progressPercentage}%`);
       calorieProgress.innerText = `${progressPercentage}%`;
       calorieProgress.classList.remove('bg-danger');
@@ -95,21 +95,20 @@ class CalorieTracker {
     mealItems.innerHTML = '';
     this.#meals.forEach((meal) => {
       const div = document.createElement('div');
+      div.className = 'card my-2';
 
       div.innerHTML = `
-        <div class="card my-2">
-            <div class="card-body">
-                <div class="d-flex align-items-center justify-content-between">
-                <h4 class="mx-1">${meal.name}</h4>
-                <div class="fs-1 bg-primary text-white text-center rounded-2 px-2 px-sm-5">
-                    ${meal.calories}
-                </div>
-                <button class="delete btn btn-danger btn-sm mx-2">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-                </div>
-            </div>
-        </div>
+          <div class="card-body">
+              <div class="d-flex align-items-center justify-content-between">
+              <h4 class="mx-1">${meal.name}</h4>
+              <div class="fs-1 bg-primary text-white text-center rounded-2 px-2 px-sm-5">
+                  ${meal.calories}
+              </div>
+              <button class="delete btn btn-danger btn-sm mx-2">
+                  <i class="fa-solid fa-xmark"></i>
+              </button>
+              </div>
+          </div>
         `;
       mealItems.appendChild(div);
     });
@@ -120,20 +119,20 @@ class CalorieTracker {
     workoutItems.innerHTML = '';
     this.#workouts.forEach((workout) => {
       const div = document.createElement('div');
+      div.className = 'card my-2';
+
       div.innerHTML = `
-        <div class="card my-2">
-            <div class="card-body">
-                <div class="d-flex align-items-center justify-content-between">
-                <h4 class="mx-1">${workout.name}</h4>
-                <div class="fs-1 bg-primary text-white text-center rounded-2 px-2 px-sm-5">
-                    ${workout.calories}
-                </div>
-                <button class="delete btn btn-danger btn-sm mx-2">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-                </div>
-            </div>
-        </div>
+          <div class="card-body">
+              <div class="d-flex align-items-center justify-content-between">
+              <h4 class="mx-1">${workout.name}</h4>
+              <div class="fs-1 bg-primary text-white text-center rounded-2 px-2 px-sm-5">
+                  ${workout.calories}
+              </div>
+              <button class="delete btn btn-danger btn-sm mx-2">
+                  <i class="fa-solid fa-xmark"></i>
+              </button>
+              </div>
+          </div>
         `;
       workoutItems.appendChild(div);
     });
@@ -156,17 +155,16 @@ class CalorieTracker {
     this.#renderStats();
   }
 
-  removeMeal(meal) {
-    const temp = [];
-    for (let i = 0; i < this.#meals.length; i++) {
-      this.#meals[i].id !== meal.id
-        ? temp.push(this.#meals.pop())
-        : this.#meals.pop();
-    }
+  removeMeal(name) {
+    this.#meals = this.#meals.filter(
+      (meal) => meal.name.toLowerCase() !== name.toLowerCase()
+    );
 
-    for (let i = 0; i < temp.length; i++) {
-      this.#meals.push(temp.pop());
-    }
+    this.#totalCalories = 0;
+    this.#meals.forEach((meal) => (this.#totalCalories += meal.calories));
+    this.#workouts.forEach(
+      (workout) => (this.#totalCalories -= workout.calories)
+    );
     this.#renderStats();
   }
 
@@ -176,24 +174,29 @@ class CalorieTracker {
     this.#renderStats();
   }
 
-  removeWorkout(workout) {
-    const temp = [];
-    for (let i = 0; i < this.#workouts.length; i++) {
-      this.#workouts[i].id !== workout.id
-        ? temp.push(this.#workouts.pop())
-        : this.#workouts.pop();
-    }
+  removeWorkout(name) {
+    this.#workouts = this.#workouts.filter(
+      (workout) => workout.name.toLowerCase() !== name.toLowerCase()
+    );
 
-    for (let i = 0; i < temp.length; i++) this.#workouts.push(temp.pop());
+    this.#totalCalories = 0;
+    this.#meals.forEach((meal) => (this.#totalCalories += meal.calories));
+    this.#workouts.forEach(
+      (workout) => (this.#totalCalories -= workout.calories)
+    );
     this.#renderStats();
   }
 
   resetDay() {
-    this.constructor();
+    this.#totalCalories = 0;
+    this.#meals = [];
+    this.#workouts = [];
+    this.#renderStats();
   }
 
   setLimit(calories) {
     this.#claorieLimit = calories;
+    this.#renderStats();
   }
 
   loadItems() {}
@@ -213,6 +216,18 @@ class App {
     document
       .querySelector('#workout-items')
       .addEventListener('click', this.#removeItem);
+    document
+      .querySelector('#filter-meals')
+      .addEventListener('input', this.#filterItem);
+    document
+      .querySelector('#filter-workouts')
+      .addEventListener('input', this.#filterItem);
+    document
+      .querySelector('#limit-form')
+      .addEventListener('submit', this.#setLimit);
+    document
+      .querySelector('header div')
+      .lastElementChild.addEventListener('click', this.#reset);
   }
 
   #newItem(e) {
@@ -237,14 +252,80 @@ class App {
   }
 
   #removeItem(e) {
-    console.log(e);
+    if (e.currentTarget.id === 'meal-items') {
+      if (e.target.className.includes('delete')) {
+        tracker.removeMeal(
+          e.target.parentElement.querySelector('h4').innerText
+        );
+      }
+      if (e.target.parentElement.className.includes('delete')) {
+        tracker.removeMeal(
+          e.target.parentElement.parentElement.querySelector('h4').innerText
+        );
+      }
+    }
+
+    if (e.currentTarget.id === 'workout-items') {
+      if (e.target.className.includes('delete')) {
+        tracker.removeWorkout(
+          e.target.parentElement.querySelector('h4').innerText
+        );
+      }
+      if (e.target.parentElement.className.includes('delete')) {
+        tracker.removeWorkout(
+          e.target.parentElement.parentElement.querySelector('h4').innerText
+        );
+      }
+    }
   }
 
-  #filterItem() {}
+  #filterItem(e) {
+    if (e.target.id === 'filter-meals' && e.target.value !== '') {
+      document.querySelectorAll('#meal-items .card').forEach((item) => {
+        if (
+          item.firstElementChild.firstElementChild.firstElementChild.innerText
+            .toLowerCase()
+            .includes(e.target.value.toLowerCase())
+        ) {
+          item.classList.remove('hidden');
+        } else {
+          item.classList.add('hidden');
+        }
+      });
+    } else {
+      document.querySelectorAll('#meal-items .card').forEach((item) => {
+        item.classList.remove('hidden');
+      });
+    }
 
-  #reset() {}
+    if (e.target.id === 'filter-workouts' && e.target.value !== '') {
+      document.querySelectorAll('#workout-items .card').forEach((item) => {
+        if (
+          item.firstElementChild.firstElementChild.firstElementChild.innerText
+            .toLowerCase()
+            .includes(e.target.value.toLowerCase())
+        ) {
+          item.classList.remove('hidden');
+        } else {
+          item.classList.add('hidden');
+        }
+      });
+    } else {
+      document.querySelectorAll('#workout-items .card').forEach((item) => {
+        item.classList.remove('hidden');
+      });
+    }
+  }
 
-  #setLimit() {}
+  #reset() {
+    tracker.resetDay();
+  }
+
+  #setLimit(e) {
+    e.preventDefault();
+    tracker.setLimit(parseInt(e.target.querySelector('#limit').value));
+    document.querySelector('#limit-modal .btn-close').click();
+  }
 }
 
 const app = new App();
